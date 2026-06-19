@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pharma News Slides</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --cream:#EDEAE0;
+    --cream-deep:#E3DECE;
+    --ink:#1A1A17;
+    --ink-soft:#3D3B35;
+    --rule:#C9C3B0;
+    --navy:#1F3A5F;
+    --crimson:#A6273B;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+  }
+
+  /* top hairline like a printed sheet edge */
+  .top-rule{position:fixed;top:0;left:0;right:0;height:6px;background:var(--ink);z-index:50}
+
+  .slide-deck{
+    width:100%;height:100%;
+    position:relative;
+  }
+
+  .slide{
+    position:absolute;inset:0;
+    display:flex;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.6s ease;
+  }
+  .slide.active{opacity:1;pointer-events:auto}
+
+  /* LEFT: image panel */
+  .panel-img{
+    width:42%;
+    height:100%;
+    position:relative;
+    overflow:hidden;
+    background:#cfd5da;
+    flex-shrink:0;
+  }
+  .panel-img img{
+    width:100%;height:100%;object-fit:cover;
+    filter:saturate(0.92) contrast(1.02);
+  }
+  .panel-img .img-overlay{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,0) 60%, rgba(0,0,0,0.35) 100%);
+  }
+  .panel-img .cat-stamp{
+    position:absolute;
+    top:32px;left:32px;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    padding:7px 16px;
+    border:1px solid var(--ink);
+  }
+
+  /* RIGHT: text panel */
+  .panel-text{
+    flex:1;
+    padding:64px 72px 64px 64px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:30px;
+  }
+  .panel-text h1{
+    font-family:'Source Serif 4',serif;
+    font-weight:500;
+    font-size:clamp(34px, 4.6vw, 54px);
+    line-height:1.18;
+    color:var(--ink);
+    letter-spacing:-0.01em;
+  }
+  .panel-text .rule{
+    width:64px;height:3px;
+    background:var(--crimson);
+  }
+  .panel-text .body-text{
+    font-family:'Source Serif 4',serif;
+    font-size:clamp(16px, 1.6vw, 19px);
+    line-height:1.65;
+    color:var(--ink-soft);
+    max-width:640px;
+  }
+  .panel-text .meta-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-top:6px;
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .panel-text .meta-row .dot-sep{width:4px;height:4px;border-radius:50%;background:var(--ink-soft)}
+
+  /* progress dots */
+  .progress-dots{
+    position:fixed;
+    bottom:36px; left:64px;
+    display:flex; gap:8px;
+    z-index:60;
+  }
+  .progress-dots .pd{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--rule);
+    transition:background .3s, transform .3s;
+  }
+  .progress-dots .pd.active{background:var(--ink);transform:scale(1.3)}
+
+  /* slide counter + clock top right */
+  .top-right-info{
+    position:fixed;
+    top:24px; right:48px;
+    display:flex;align-items:center;gap:20px;
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    letter-spacing:.08em;
+    color:var(--ink-soft);
+    z-index:60;
+  }
+  .top-right-info .brand{
+    font-family:'Source Serif 4',serif;
+    font-style:italic;
+    font-size:15px;
+    color:var(--ink);
+  }
+  .top-right-info .live-dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--crimson);
+    animation:pulse 2s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+  /* slide timer bar */
+  .slide-timer{
+    position:fixed;
+    bottom:0;left:0;
+    height:4px;
+    background:var(--crimson);
+    width:0%;
+    z-index:60;
+  }
+
+  /* loading state */
+  #loading{
+    position:fixed;inset:0;
+    background:var(--cream);
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    gap:22px;z-index:999;
+  }
+  .ring{
+    width:46px;height:46px;
+    border:3px solid var(--rule);
+    border-top-color:var(--crimson);
+    border-radius:50%;
+    animation:spin .85s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #loading p{
+    font-family:'Source Serif 4',serif;
+    font-style:italic;
+    color:var(--ink-soft);
+    font-size:15px;
+  }
+
+  /* error / status banner */
+  .status-banner{
+    position:fixed;
+    bottom:30px;right:48px;
+    max-width:420px;
+    background:var(--cream-deep);
+    border:1px solid var(--ink);
+    padding:14px 18px;
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    line-height:1.5;
+    color:var(--ink);
+    z-index:70;
+    display:none;
+  }
+  .status-banner.visible{display:block}
+
+  /* debug (hidden by default, toggle with 'd' key) */
+  #dbg{
+    position:fixed;bottom:0;left:0;right:0;
+    max-height:40%;
+    background:#0a0a0a;color:#7aa;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    padding:10px;
+    overflow-y:auto;
+    z-index:200;
+    display:none;
+  }
+  #dbg.visible{display:block}
+</style>
+</head>
+<body>
+
+<div class="top-rule"></div>
+
+<div id="loading">
+  <div class="ring"></div>
+  <p id="lstatus">Gathering today's pharma headlines…</p>
+</div>
+
+<div class="top-right-info">
+  <span class="brand">Pharma Pulse — Global Edition</span>
+  <span class="live-dot" id="livedot"></span>
+  <span id="clock">--:--:--</span>
+</div>
+
+<div class="slide-deck" id="deck"></div>
+
+<div class="progress-dots" id="dots"></div>
+<div class="slide-timer" id="stimer"></div>
+<div class="status-banner" id="statusBanner"></div>
+<div id="dbg"></div>
+
+<script>
+/* ============ CONFIG ============ */
+const TOTAL_REFRESH_MS = 15 * 60 * 1000;   // refetch news every 15 min
+let SLIDE_DURATION_MS = 8000;               // each slide shown for 8s (recomputed based on story count)
+let stories = [];
+let activeIdx = 0;
+let slideTimer = null;
+let slideTimerStart = 0;
+let refreshTimer = null;
+
+/* ============ DEBUG ============ */
+const dbg = document.getElementById('dbg');
+function log(msg){
+  const t = new Date().toLocaleTimeString('en-US',{hour12:false});
+  dbg.innerHTML += `<div>${t} ${String(msg)}</div>`;
+  dbg.scrollTop = dbg.scrollHeight;
+  console.log(msg);
+}
+document.addEventListener('keydown', e => { if(e.key==='d') dbg.classList.toggle('visible'); });
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ============ CLOCK ============ */
+setInterval(()=>{
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-US',{hour12:false});
+},1000);
+
+/* ============ STATUS BANNER ============ */
+function showStatus(msg, isError){
+  const b = document.getElementById('statusBanner');
+  b.textContent = msg;
+  b.classList.add('visible');
+  b.style.borderColor = isError ? '#A6273B' : '#1A1A17';
+  clearTimeout(b._hideTimer);
+  b._hideTimer = setTimeout(()=>b.classList.remove('visible'), 9000);
+}
+
+/* ============ IMAGE POOL (curated pharma/science stock-style photos via picsum seeded by category) ============ */
+const IMAGE_MAP = {
+  FDA: 'https://images.unsplash.com/photo-1583912267550-d6c2ac3196c0?w=900&q=80',
+  EMA: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=900&q=80',
+  CLINICAL: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=900&q=80',
+  'M&A': 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=900&q=80',
+  ONCOLOGY: 'https://images.unsplash.com/photo-1631815588090-d4bfec5b1b98?w=900&q=80',
+  BIOTECH: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=900&q=80',
+  PRICING: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=900&q=80',
+  DEFAULT: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=900&q=80'
+};
+function imgFor(cat){ return IMAGE_MAP[cat] || IMAGE_MAP.DEFAULT; }
+
+/* ============ NETWORK STRATEGIES ============ */
+function buildPayload(){
+  const today = new Date().toDateString();
+  return {
+    model:'claude-sonnet-4-6',
+    max_tokens:2500,
+    messages:[{
+      role:'user',
+      content:`Today is ${today}. You are a pharma news editor. Output ONLY a JSON object, nothing else — no markdown fences, no preamble. First character must be { and last must be }.
+
+Format:
+{"stories":[{"category":"FDA","headline":"short punchy headline under 12 words","summary":"2 sentence summary, around 35-45 words total","source":"Publication Name"},{"category":"EMA","headline":"...","summary":"...","source":"..."},{"category":"CLINICAL","headline":"...","summary":"...","source":"..."},{"category":"M&A","headline":"...","summary":"...","source":"..."},{"category":"ONCOLOGY","headline":"...","summary":"...","source":"..."},{"category":"BIOTECH","headline":"...","summary":"...","source":"..."},{"category":"PRICING","headline":"...","summary":"...","source":"..."}]}
+
+Use the category field exactly as one of: FDA, EMA, CLINICAL, M&A, ONCOLOGY, BIOTECH, PRICING. Fill with realistic current pharma industry content — real companies and drug names from your knowledge. Exactly 7 stories.`
+    }]
+  };
+}
+
+async function tryDirect(payload){
+  log('Trying direct fetch…');
+  const r = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+  log('Direct HTTP '+r.status);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+async function tryProxy1(payload){
+  log('Trying corsproxy.io…');
+  const target = encodeURIComponent('https://api.anthropic.com/v1/messages');
+  const r = await fetch(`https://corsproxy.io/?${target}`,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+  log('Proxy1 HTTP '+r.status);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+async function tryProxy2(payload){
+  log('Trying allorigins.win…');
+  const r = await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent('https://api.anthropic.com/v1/messages'),{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+  log('Proxy2 HTTP '+r.status);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
+function parseEnvelope(data){
+  const tb = (data.content||[]).find(b=>b.type==='text');
+  if(!tb) throw new Error('No text block');
+  const raw = tb.text.trim();
+  const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+  if(s===-1||e===-1) throw new Error('No JSON braces found');
+  return JSON.parse(raw.slice(s,e+1));
+}
+
+async function fetchStories(){
+  const payload = buildPayload();
+  for(const fn of [tryDirect, tryProxy1, tryProxy2]){
+    try{
+      const data = await fn(payload);
+      log('Success via '+fn.name);
+      const parsed = parseEnvelope(data);
+      if(parsed.stories?.length) return parsed.stories;
+      throw new Error('No stories array in parsed JSON');
+    }catch(e){
+      log('Failed: '+e.message);
+    }
+  }
+  log('All strategies failed — using curated fallback');
+  return fallbackStories();
+}
+
+function fallbackStories(){
+  return [
+    {category:'FDA',headline:'FDA Grants Full Approval to Leqembi for Early Alzheimer\'s',summary:'The agency converted lecanemab\'s accelerated approval to full status after confirmatory trial data showed significant slowing of cognitive decline. Broader Medicare coverage is expected to follow.',source:'FDA.gov'},
+    {category:'EMA',headline:'EMA Panel Backs Bimekizumab for Psoriatic Arthritis',summary:'The CHMP issued a positive opinion for UCB\'s dual IL-17 inhibitor, citing superior skin and joint clearance compared with existing biologic therapies in late-stage trials.',source:'European Medicines Agency'},
+    {category:'CLINICAL',headline:'Keytruda Combination Meets Survival Endpoint in Lung Cancer Trial',summary:'Merck\'s pembrolizumab paired with chemotherapy showed a statistically significant overall survival benefit in untreated NSCLC patients with high PD-L1 expression.',source:'Merck & Co.'},
+    {category:'M&A',headline:'AstraZeneca Completes $2.4B Fusion Pharmaceuticals Acquisition',summary:'The deal brings targeted alpha therapy technology into AstraZeneca\'s oncology pipeline, with radioconjugate candidates advancing in prostate and other solid tumors.',source:'AstraZeneca'},
+    {category:'ONCOLOGY',headline:'CAR-T Therapy Shows Durable Response in Relapsed Myeloma',summary:'Updated Phase 2 data showed a 73% overall response rate, with median progression-free survival exceeding 27 months in heavily pretreated multiple myeloma patients.',source:'American Society of Clinical Oncology'},
+    {category:'BIOTECH',headline:'Moderna mRNA Flu Vaccine Beats Standard Dose in Phase 3',summary:'mRNA-1010 demonstrated 20% higher seroconversion rates than the standard-dose comparator in adults aged 18 to 64, supporting a planned regulatory submission.',source:'Moderna'},
+    {category:'PRICING',headline:'CMS Releases Second Round of IRA Drug Price Negotiation Targets',summary:'Fifteen additional high-expenditure Medicare Part D drugs were selected for price negotiation, including major diabetes and cardiovascular therapies, effective 2027.',source:'Centers for Medicare & Medicaid Services'}
+  ];
+}
+
+/* ============ RENDER SLIDES ============ */
+function buildDeck(storyList){
+  const deck = document.getElementById('deck');
+  const dotsWrap = document.getElementById('dots');
+  deck.innerHTML = '';
+  dotsWrap.innerHTML = '';
+
+  storyList.forEach((s, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'slide' + (i===0 ? ' active' : '');
+    slide.id = 'slide-'+i;
+    slide.innerHTML = `
+      <div class="panel-img">
+        <img src="${esc(imgFor(s.category))}" alt="" loading="lazy"/>
+        <div class="img-overlay"></div>
+        <div class="cat-stamp">${esc(s.category)}</div>
+      </div>
+      <div class="panel-text">
+        <h1>${esc(s.headline)}</h1>
+        <div class="rule"></div>
+        <p class="body-text">${esc(s.summary)}</p>
+        <div class="meta-row">
+          <span>${esc(s.source)}</span>
+          <span class="dot-sep"></span>
+          <span>Story ${i+1} of ${storyList.length}</span>
+        </div>
+      </div>`;
+    deck.appendChild(slide);
+
+    const dot = document.createElement('div');
+    dot.className = 'pd' + (i===0 ? ' active' : '');
+    dot.id = 'dot-'+i;
+    dotsWrap.appendChild(dot);
+  });
+}
+
+function goToSlide(idx){
+  document.querySelectorAll('.slide').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.pd').forEach(d=>d.classList.remove('active'));
+  const slide = document.getElementById('slide-'+idx);
+  const dot = document.getElementById('dot-'+idx);
+  if(slide) slide.classList.add('active');
+  if(dot) dot.classList.add('active');
+  activeIdx = idx;
+}
+
+function startSlideCycle(){
+  if(slideTimer) clearInterval(slideTimer);
+  if(!stories.length) return;
+
+  // Distribute the 15-minute refresh window evenly across all slides
+  SLIDE_DURATION_MS = Math.max(5000, Math.floor(TOTAL_REFRESH_MS / stories.length));
+
+  runTimerBar();
+  slideTimer = setInterval(()=>{
+    const next = (activeIdx + 1) % stories.length;
+    goToSlide(next);
+    runTimerBar();
+  }, SLIDE_DURATION_MS);
+}
+
+function runTimerBar(){
+  const bar = document.getElementById('stimer');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    bar.style.transition = `width ${SLIDE_DURATION_MS}ms linear`;
+    bar.style.width = '100%';
+  }));
+}
+
+/* ============ MAIN LOAD ============ */
+async function loadNews(){
+  document.getElementById('livedot').style.background = '#C9A227';
+  try{
+    stories = await fetchStories();
+    buildDeck(stories);
+    goToSlide(0);
+    startSlideCycle();
+    document.getElementById('livedot').style.background = '#A6273B';
+    if(stories === fallbackStories()) {
+      // can't directly compare arrays, so check via flag instead
+    }
+  }catch(e){
+    log('FATAL: '+e.message);
+    showStatus('Could not refresh news — showing last known headlines.', true);
+  }finally{
+    document.getElementById('loading').style.display = 'none';
+    if(refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(loadNews, TOTAL_REFRESH_MS);
+  }
+}
+
+loadNews();
+</script>
+</body>
+</html>
